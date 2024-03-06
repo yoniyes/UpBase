@@ -3,3 +3,6 @@ def something():
 
 def something_else():
     pass
+
+def something_completely_different():
+    pass
