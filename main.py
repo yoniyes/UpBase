@@ -104,5 +104,4 @@ if __name__ == "__main__":
         git_checkout(original_branch)
 
         # Pop the stash
-        if not git_stash_pop():
-            exit(1)  # Exit the script if popping the stash fails
+        git_stash_pop()
