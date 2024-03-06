@@ -77,12 +77,12 @@ def rebase_local_branches(branch_mapping):
                 raise Exception(f"Failed aborting rebase of '{local_branch}'")
             continue
 
-        if push_to_remote:
+        if push_to_remote is not None and push_to_remote:
             print(f"Pushing '{local_branch}' to origin...")
             git_push(local_branch)
 
 if __name__ == "__main__":
-    with open("branch_mapping.yaml", "r") as yaml_file:
+    with open(".upbase/.upbase.yaml", "r") as yaml_file:
         # Save the current branch name
         original_branch = get_current_branch_name()
 

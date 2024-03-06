@@ -1,8 +1,4 @@
 branches:
-  - local_branch: local_branch1
-    remote_branch: origin/remote_branch1
+  - local_branch: test
+    remote_branch: origin/main
     push_to_remote: True
-  - local_branch: local_branch2
-    remote_branch: origin/remote_branch2
-  - local_branch: local_branch3
-    remote_branch: origin/remote_branch3
