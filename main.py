@@ -23,7 +23,6 @@ def git_stash_pop():
     try:
         subprocess.run(["git", "stash", "pop"], check=True)
     except subprocess.CalledProcessError:
-        print("Error occurred while popping the stash.")
         return False
     return True
 
