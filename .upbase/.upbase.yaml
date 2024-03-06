@@ -2,3 +2,5 @@ branches:
   - local_branch: test
     remote_branch: origin/main
     push_to_remote: True
+  - local_branch: local_test
+    remote_branch: origin/main
