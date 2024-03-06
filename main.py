@@ -19,9 +19,10 @@ def git_stash():
         return None
     return stash_name
 
-def git_stash_pop():
+def git_stash_pop(stash_name):
+    stash_value =  "stash^{/"f"{stash_name}""}"
     try:
-        subprocess.run(["git", "stash", "pop"], check=True)
+        subprocess.run(["git", "stash", "apply", stash_value], check=True)
     except subprocess.CalledProcessError:
         return False
     return True
@@ -103,4 +104,4 @@ if __name__ == "__main__":
         git_checkout(original_branch)
 
         # Pop the stash
-        git_stash_pop()
+        git_stash_pop(stash_name)
