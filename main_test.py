@@ -6,3 +6,6 @@ def something_else():
 
 def something_completely_different():
     pass
+
+def foo():
+    pass

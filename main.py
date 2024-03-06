@@ -63,6 +63,10 @@ def rebase_local_branches(branch_mapping):
     git_fetch()
 
     for branch_info in branch_mapping:
+        disabled = branch_info.get("disabled")
+        if disabled is not None and disabled:
+            continue
+
         local_branch = branch_info.get("local_branch")
         remote_branch = branch_info.get("remote_branch")
         push_to_remote = branch_info.get("push_to_remote")
