@@ -96,7 +96,8 @@ def rebase_local_branches(branch_mapping):
             git_push(local_branch)
         
         if post_script is not None and len(post_script) > 0:
-            run_post_script(post_script)
+            if not run_post_script(post_script):
+                print(f"Failed to execute post-script for {local_branch}, post-script: {post_script}")
 
 if __name__ == "__main__":
     with open(".upbase/.upbase.yaml", "r") as yaml_file:
