@@ -8,3 +8,4 @@ branches:
     post_script:
       - "echo POST SCRIPT"
       - "echo MORE POST SCRIPT"
+      - "python3 ./my-post-script.py"
