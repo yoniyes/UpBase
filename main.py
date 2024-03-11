@@ -1,6 +1,7 @@
 import subprocess
 import yaml
 import time
+from colorama import Fore, Style
 
 def get_current_branch_name():
     result = subprocess.run(["git", "rev-parse", "--abbrev-ref", "HEAD"], capture_output=True, text=True)
@@ -15,7 +16,7 @@ def git_stash():
     try:
         subprocess.run(["git", "stash", "push", "-m" , f'"{stash_name}"'], check=True)
     except subprocess.CalledProcessError:
-        print("Error occurred while stashing changes.")
+        print(Fore.RED + "Error occurred while stashing changes." + Style.RESET_ALL)
         return None
     return stash_name
 
@@ -31,7 +32,7 @@ def git_checkout(branch_name):
     try:
         subprocess.run(["git", "checkout", branch_name], check=True)
     except subprocess.CalledProcessError:
-        print(f"Branch '{branch_name}' does not exist.")
+        print(Fore.RED + f"Branch '{branch_name}' does not exist." + Style.RESET_ALL)
         return False
     return True
 
@@ -39,7 +40,7 @@ def git_rebase(branch_name):
     try:
         subprocess.run(["git", "rebase", branch_name], check=True)
     except subprocess.CalledProcessError:
-        print(f"Error occurred while rebasing '{get_current_branch_name()}' on top of '{branch_name}'.")
+        print(Fore.RED + f"Error occurred while rebasing '{get_current_branch_name()}' on top of '{branch_name}'." + Style.RESET_ALL)
         return False
     return True
 
@@ -47,7 +48,7 @@ def git_rebase_abort(branch_name):
     try:
         subprocess.run(["git", "rebase", "--abort"], check=True)
     except subprocess.CalledProcessError:
-        print(f"Error occurred while aborting rebase of '{get_current_branch_name()}' on top of '{branch_name}'.")
+        print(Fore.RED + f"Error occurred while aborting rebase of '{get_current_branch_name()}' on top of '{branch_name}'." + Style.RESET_ALL)
         return False
     return True
 
@@ -55,7 +56,7 @@ def git_push(branch_name):
     try:
         subprocess.run(["git", "push", "origin", branch_name, "--force"], check=True)
     except subprocess.CalledProcessError:
-        print(f"Error occurred while pushing '{branch_name}' to origin.")
+        print(Fore.RED + f"Error occurred while pushing '{branch_name}' to origin." + Style.RESET_ALL)
         return False
     return True
 
@@ -64,7 +65,7 @@ def run_post_script(script):
         try:
             subprocess.run([command], check=True, shell=True)
         except subprocess.CalledProcessError:
-            print(f"Error occurred while executing command '{command}' in post-script.")
+            print(Fore.RED + f"Error occurred while executing command '{command}' in post-script." + Style.RESET_ALL)
             return False
     return True
 
@@ -81,23 +82,23 @@ def rebase_local_branches(branch_mapping):
         push_to_remote = branch_info.get("push_to_remote")
         post_script = branch_info.get("post_script")
 
-        print(f"Rebasing local branch '{local_branch}' on top of remote branch '{remote_branch}'...")
+        print(Fore.GREEN + f"Rebasing local branch '{local_branch}' on top of remote branch '{remote_branch}'..." + Style.RESET_ALL)
         if not git_checkout(local_branch):
             continue
 
         if not git_rebase(remote_branch):
-            print(f"Conflicts occurred during rebase of local branch '{local_branch}'. Aborting rebase...")
+            print(Fore.YELLOW + f"Conflicts occurred during rebase of local branch '{local_branch}'. Aborting rebase..." + Style.RESET_ALL)
             if not git_rebase_abort():
                 raise Exception(f"Failed aborting rebase of '{local_branch}'")
             continue
 
         if push_to_remote is not None and push_to_remote:
-            print(f"Pushing '{local_branch}' to origin...")
+            print(Fore.GREEN + f"Pushing '{local_branch}' to origin..." + Style.RESET_ALL)
             git_push(local_branch)
         
         if post_script is not None and len(post_script) > 0:
             if not run_post_script(post_script):
-                print(f"Failed to execute post-script for {local_branch}, post-script: {post_script}")
+                print(Fore.RED + f"Failed to execute post-script for {local_branch}, post-script: {post_script}" + Style.RESET_ALL)
 
 if __name__ == "__main__":
     with open(".upbase/.upbase.yaml", "r") as yaml_file:
@@ -115,7 +116,7 @@ if __name__ == "__main__":
 
         except Exception as e:
             print(e)
-            print(f"******** Stashed your changes in original branch '{original_branch}' under name '{stash_name}' ********")
+            print(Fore.YELLOW + f"******** Stashed your changes in original branch '{original_branch}' under name '{stash_name}' ********" + Style.RESET_ALL)
             exit(1)
 
         # Switch back to the original branch
