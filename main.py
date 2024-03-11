@@ -97,6 +97,7 @@ def rebase_local_branches(branch_mapping):
             git_push(local_branch)
         
         if post_script is not None and len(post_script) > 0:
+            print(Fore.GREEN + f"Running post-script for {local_branch}..." + Style.RESET_ALL)
             if not run_post_script(post_script):
                 print(Fore.RED + f"Failed to execute post-script for {local_branch}, post-script: {post_script}" + Style.RESET_ALL)
 
