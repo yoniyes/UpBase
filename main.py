@@ -62,7 +62,7 @@ def git_push(branch_name):
 def run_post_script(script):
     for command in script:
         try:
-            subprocess.run([command], check=True)
+            subprocess.run(["sh", "-C", command], check=True)
         except subprocess.CalledProcessError:
             print(f"Error occurred while executing command '{command}' in post-script.")
             return False
