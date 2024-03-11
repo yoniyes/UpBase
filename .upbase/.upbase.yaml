@@ -1,8 +1,10 @@
 branches:
   - local_branch: test
     remote_branch: origin/main
-    disabled: True
+    # disabled: True
     push_to_remote: True
+    post_script:
+      - "python3 ./my-post-script.py"
   - local_branch: local_test
     remote_branch: origin/main
     post_script:
