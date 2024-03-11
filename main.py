@@ -59,6 +59,15 @@ def git_push(branch_name):
         return False
     return True
 
+def run_post_script(script):
+    for command in script:
+        try:
+            subprocess.run([command], check=True)
+        except subprocess.CalledProcessError:
+            print(f"Error occurred while executing command '{command}' in post-script.")
+            return False
+    return True
+
 def rebase_local_branches(branch_mapping):
     git_fetch()
 
@@ -70,6 +79,7 @@ def rebase_local_branches(branch_mapping):
         local_branch = branch_info.get("local_branch")
         remote_branch = branch_info.get("remote_branch")
         push_to_remote = branch_info.get("push_to_remote")
+        post_script = branch_info.get("post_script")
 
         print(f"Rebasing local branch '{local_branch}' on top of remote branch '{remote_branch}'...")
         if not git_checkout(local_branch):
@@ -84,6 +94,9 @@ def rebase_local_branches(branch_mapping):
         if push_to_remote is not None and push_to_remote:
             print(f"Pushing '{local_branch}' to origin...")
             git_push(local_branch)
+        
+        if post_script is not None and len(post_script) > 0:
+            run_post_script(post_script)
 
 if __name__ == "__main__":
     with open(".upbase/.upbase.yaml", "r") as yaml_file:

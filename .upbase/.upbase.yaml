@@ -5,3 +5,6 @@ branches:
     push_to_remote: True
   - local_branch: local_test
     remote_branch: origin/main
+    post_script:
+      - "echo POST SCRIPT"
+      - "echo MORE POST SCRIPT"
