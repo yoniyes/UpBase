@@ -1,6 +1,7 @@
 import subprocess
 import yaml
 import time
+import logging
 from colorama import Fore, Style
 
 def get_current_branch_name():
@@ -16,7 +17,10 @@ def git_stash():
     try:
         subprocess.run(["git", "stash", "push", "-m" , f'"{stash_name}"'], check=True)
     except subprocess.CalledProcessError:
-        print(Fore.RED + "Error occurred while stashing changes." + Style.RESET_ALL)
+        msg = "Error occurred while stashing changes."
+        print(Fore.RED + msg + Style.RESET_ALL)
+        logging.error(msg)
+
         return None
     return stash_name
 
@@ -32,7 +36,10 @@ def git_checkout(branch_name):
     try:
         subprocess.run(["git", "checkout", branch_name], check=True)
     except subprocess.CalledProcessError:
-        print(Fore.RED + f"Branch '{branch_name}' does not exist." + Style.RESET_ALL)
+        msg = f"Branch '{branch_name}' does not exist."
+        print(Fore.RED + msg + Style.RESET_ALL)
+        logging.error(msg)
+
         return False
     return True
 
@@ -40,7 +47,10 @@ def git_rebase(branch_name):
     try:
         subprocess.run(["git", "rebase", branch_name], check=True)
     except subprocess.CalledProcessError:
-        print(Fore.RED + f"Error occurred while rebasing '{get_current_branch_name()}' on top of '{branch_name}'." + Style.RESET_ALL)
+        msg = f"Error occurred while rebasing '{get_current_branch_name()}' on top of '{branch_name}'."
+        print(Fore.RED + msg + Style.RESET_ALL)
+        logging.error(msg)
+
         return False
     return True
 
@@ -48,7 +58,10 @@ def git_rebase_abort(branch_name):
     try:
         subprocess.run(["git", "rebase", "--abort"], check=True)
     except subprocess.CalledProcessError:
-        print(Fore.RED + f"Error occurred while aborting rebase of '{get_current_branch_name()}' on top of '{branch_name}'." + Style.RESET_ALL)
+        msg = f"Error occurred while aborting rebase of '{get_current_branch_name()}' on top of '{branch_name}'."
+        print(Fore.RED + msg + Style.RESET_ALL)
+        logging.error(msg)
+
         return False
     return True
 
@@ -56,7 +69,10 @@ def git_push(branch_name):
     try:
         subprocess.run(["git", "push", "origin", branch_name, "--force"], check=True)
     except subprocess.CalledProcessError:
-        print(Fore.RED + f"Error occurred while pushing '{branch_name}' to origin." + Style.RESET_ALL)
+        msg = f"Error occurred while pushing '{branch_name}' to origin."
+        print(Fore.RED + msg + Style.RESET_ALL)
+        logging.error(msg)
+
         return False
     return True
 
@@ -65,7 +81,10 @@ def run_post_script(script):
         try:
             subprocess.run([command], check=True, shell=True)
         except subprocess.CalledProcessError:
-            print(Fore.RED + f"Error occurred while executing command '{command}' in post-script." + Style.RESET_ALL)
+            msg = f"Error occurred while executing command '{command}' in post-script."
+            print(Fore.RED + msg + Style.RESET_ALL)
+            logging.error(msg)
+
             return False
     return True
 
@@ -82,26 +101,47 @@ def rebase_local_branches(branch_mapping):
         push_to_remote = branch_info.get("push_to_remote")
         post_script = branch_info.get("post_script")
 
-        print(Fore.GREEN + f"Rebasing local branch '{local_branch}' on top of remote branch '{remote_branch}'..." + Style.RESET_ALL)
+        msg = f"Rebasing local branch '{local_branch}' on top of remote branch '{remote_branch}'..."
+        print(Fore.GREEN + msg + Style.RESET_ALL)
+        logging.info(msg)
+
         if not git_checkout(local_branch):
             continue
 
         if not git_rebase(remote_branch):
-            print(Fore.YELLOW + f"Conflicts occurred during rebase of local branch '{local_branch}'. Aborting rebase..." + Style.RESET_ALL)
+            msg = f"Conflicts occurred during rebase of local branch '{local_branch}'. Aborting rebase..."
+            print(Fore.YELLOW + msg + Style.RESET_ALL)
+            logging.warn(msg)
+
             if not git_rebase_abort():
                 raise Exception(f"Failed aborting rebase of '{local_branch}'")
             continue
 
         if push_to_remote is not None and push_to_remote:
-            print(Fore.GREEN + f"Pushing '{local_branch}' to origin..." + Style.RESET_ALL)
+            msg = f"Pushing '{local_branch}' to origin..."
+            print(Fore.GREEN + msg + Style.RESET_ALL)
+            logging.info(msg)
+
             git_push(local_branch)
         
         if post_script is not None and len(post_script) > 0:
-            print(Fore.GREEN + f"Running post-script for {local_branch}..." + Style.RESET_ALL)
+            msg = f"Running post-script for {local_branch}..."
+            print(Fore.GREEN + msg + Style.RESET_ALL)
+            logging.info(msg)
+
             if not run_post_script(post_script):
-                print(Fore.RED + f"Failed to execute post-script for {local_branch}, post-script: {post_script}" + Style.RESET_ALL)
+                msg = f"Failed to execute post-script for {local_branch}, post-script: {post_script}"
+                print(Fore.RED + msg + Style.RESET_ALL)
+                logging.error(msg)
+
 
 if __name__ == "__main__":
+    logging.basicConfig(format='%(levelname)s %(asctime)s: %(message)s',
+                        datefmt='%m/%d/%Y %I:%M:%S %p',
+                        level=logging.DEBUG,
+                        filename='.upbase/upbase.log',
+                        encoding='utf-8')
+
     with open(".upbase/.upbase.yaml", "r") as yaml_file:
         # Save the current branch name
         original_branch = get_current_branch_name()
@@ -116,8 +156,11 @@ if __name__ == "__main__":
             rebase_local_branches(branch_mapping.get("branches", []))
 
         except Exception as e:
+            msg = f"******** Stashed your changes in original branch '{original_branch}' under name '{stash_name}' ********"
             print(e)
-            print(Fore.YELLOW + f"******** Stashed your changes in original branch '{original_branch}' under name '{stash_name}' ********" + Style.RESET_ALL)
+            logging.exception('Exception!', exc_info=e)
+            print(Fore.YELLOW + msg + Style.RESET_ALL)
+            logging.warn(msg)
             exit(1)
 
         # Switch back to the original branch
