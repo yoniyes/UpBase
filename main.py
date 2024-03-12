@@ -125,14 +125,19 @@ def rebase_local_branches(branch_mapping):
             git_push(local_branch)
         
         if post_script is not None and len(post_script) > 0:
-            msg = f"Running post-script for {local_branch}..."
+            msg = f"Running post-script for '{local_branch}'..."
             print(Fore.GREEN + msg + Style.RESET_ALL)
             logging.info(msg)
 
             if not run_post_script(post_script):
-                msg = f"Failed to execute post-script for {local_branch}, post-script: {post_script}"
+                msg = f"Failed to execute post-script for '{local_branch}', post-script: {post_script}"
                 print(Fore.RED + msg + Style.RESET_ALL)
                 logging.error(msg)
+        
+        msg = f"Successfully rebased local branch '{local_branch}' on top of remote branch '{remote_branch}'"
+        print(Fore.GREEN + msg + Style.RESET_ALL)
+        logging.info(msg)
+
 
 
 if __name__ == "__main__":
