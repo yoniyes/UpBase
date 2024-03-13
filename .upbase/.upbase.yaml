@@ -1,12 +1,14 @@
+remote_repo: origin
 branches:
   - local_branch: test
-    remote_branch: origin/main
+    remote_branch: main
     # disabled: True
-    push_to_remote: True
+    push_to_remote:
+      force: True
     post_script:
       - "python3 ./my-post-script.py"
   - local_branch: local_test
-    remote_branch: origin/main
+    remote_branch: main
     post_script:
       - "echo POST SCRIPT"
       - "echo MORE POST SCRIPT"

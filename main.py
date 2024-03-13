@@ -65,9 +65,9 @@ def git_rebase_abort(branch_name):
         return False
     return True
 
-def git_push(branch_name):
+def git_push(branch_name, force=False):
     try:
-        subprocess.run(["git", "push", "origin", branch_name, "--force"], check=True)
+        subprocess.run(["git", "push", "origin", branch_name, "--force" if force else ""], check=True)
     except subprocess.CalledProcessError:
         msg = f"Error occurred while pushing '{branch_name}' to origin."
         print(Fore.RED + msg + Style.RESET_ALL)
@@ -88,7 +88,7 @@ def run_post_script(script):
             return False
     return True
 
-def rebase_local_branches(branch_mapping):
+def rebase_local_branches(branch_mapping, remote_repo="origin"):
     git_fetch()
 
     for branch_info in branch_mapping:
@@ -97,7 +97,7 @@ def rebase_local_branches(branch_mapping):
             continue
 
         local_branch = branch_info.get("local_branch")
-        remote_branch = branch_info.get("remote_branch")
+        remote_branch = '/'.join([remote_repo, branch_info.get("remote_branch")])
         push_to_remote = branch_info.get("push_to_remote")
         post_script = branch_info.get("post_script")
 
@@ -117,12 +117,23 @@ def rebase_local_branches(branch_mapping):
                 raise Exception(f"Failed aborting rebase of '{local_branch}'")
             continue
 
-        if push_to_remote is not None and push_to_remote:
+        if push_to_remote is not None:
             msg = f"Pushing '{local_branch}' to origin..."
             print(Fore.GREEN + msg + Style.RESET_ALL)
             logging.info(msg)
 
-            git_push(local_branch)
+            git_fetch()
+            remote_local_branch = '/'.join([remote_repo, local_branch])
+            if not git_rebase(remote_local_branch):
+                msg = f"Conflicts occurred during rebase of local branch '{local_branch}' before pushing it to remote. Aborting rebase..."
+                print(Fore.YELLOW + msg + Style.RESET_ALL)
+                logging.warn(msg)
+
+                if not git_rebase_abort():
+                    raise Exception(f"Failed aborting rebase of '{local_branch}'")
+                continue
+
+            git_push(local_branch, force=push_to_remote.get("force", False))
         
         if post_script is not None and len(post_script) > 0:
             msg = f"Running post-script for '{local_branch}'..."
@@ -158,7 +169,8 @@ if __name__ == "__main__":
 
         try:
             branch_mapping = yaml.safe_load(yaml_file)
-            rebase_local_branches(branch_mapping.get("branches", []))
+            remote_repo = branch_mapping.get("remote_repo", "origin")
+            rebase_local_branches(branch_mapping.get("branches", []), remote_repo=remote_repo)
 
         except Exception as e:
             msg = f"******** Stashed your changes in original branch '{original_branch}' under name '{stash_name}' ********"
