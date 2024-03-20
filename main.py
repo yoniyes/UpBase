@@ -153,7 +153,7 @@ def rebase_local_branches(branch_mapping, remote_repo="origin"):
                         raise Exception(f"Failed aborting rebase of '{local_branch}'")
                     continue
 
-            git_push(local_branch, force=push_to_remote.get("force", False))
+                git_push(local_branch, force=push_to_remote.get("force", False))
         
         if post_script is not None and len(post_script) > 0:
             msg = f"Running post-script for '{local_branch}'..."
