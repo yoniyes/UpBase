@@ -86,12 +86,12 @@ def is_allowed_to_push(local_branch, push_to_remote):
     if allowed_to_push is None:
         msg = f"Can't push '{local_branch}' to origin: in .upbase.yaml, field `branch->push_to_remote->allowed_to_push` must be set to the allowed user email"
         print(Fore.YELLOW + msg + Style.RESET_ALL)
-        logging.warn(msg)
+        logging.warning(msg)
         return False
     elif allowed_to_push != user_email:
         msg = f"Can't push '{local_branch}' to origin: you are user '{user_email}' and only user '{allowed_to_push}' is allowed to push"
         print(Fore.YELLOW + msg + Style.RESET_ALL)
-        logging.warn(msg)
+        logging.warning(msg)
         return False
     return True
 
@@ -130,7 +130,7 @@ def rebase_local_branches(branch_mapping, remote_repo="origin"):
         if not git_rebase(remote_branch):
             msg = f"Conflicts occurred during rebase of local branch '{local_branch}'. Aborting rebase..."
             print(Fore.YELLOW + msg + Style.RESET_ALL)
-            logging.warn(msg)
+            logging.warning(msg)
 
             if not git_rebase_abort():
                 raise Exception(f"Failed aborting rebase of '{local_branch}'")
@@ -147,7 +147,7 @@ def rebase_local_branches(branch_mapping, remote_repo="origin"):
                 if not git_rebase(remote_local_branch):
                     msg = f"Conflicts occurred during rebase of local branch '{local_branch}' before pushing it to remote. Aborting rebase..."
                     print(Fore.YELLOW + msg + Style.RESET_ALL)
-                    logging.warn(msg)
+                    logging.warning(msg)
 
                     if not git_rebase_abort():
                         raise Exception(f"Failed aborting rebase of '{local_branch}'")
@@ -197,7 +197,7 @@ if __name__ == "__main__":
             print(e)
             logging.exception('Exception!', exc_info=e)
             print(Fore.YELLOW + msg + Style.RESET_ALL)
-            logging.warn(msg)
+            logging.warning(msg)
             exit(1)
 
         # Switch back to the original branch
