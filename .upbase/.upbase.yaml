@@ -4,11 +4,14 @@ branches:
     remote_branch: main
     # disabled: True
     push_to_remote:
+      allowed_to_push: yonatanyeshanov@gmail.com
       force: True
     post_script:
       - "python3 ./my-post-script.py"
   - local_branch: local_test
     remote_branch: main
+    push_to_remote:
+      allowed_to_push: some@email.com
     post_script:
       - "echo POST SCRIPT"
       - "echo MORE POST SCRIPT"

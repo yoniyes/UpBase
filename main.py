@@ -8,6 +8,10 @@ def get_current_branch_name():
     result = subprocess.run(["git", "rev-parse", "--abbrev-ref", "HEAD"], capture_output=True, text=True)
     return result.stdout.strip()
 
+def get_git_config_user_email():
+    result = subprocess.run(["git", "config", "user.email"], capture_output=True, text=True)
+    return result.stdout.strip()
+
 def git_fetch():
     subprocess.run(["git", "fetch", "origin"], check=True)
 
@@ -76,6 +80,21 @@ def git_push(branch_name, force=False):
         return False
     return True
 
+def is_allowed_to_push(local_branch, push_to_remote):
+    allowed_to_push = push_to_remote.get("allowed_to_push")
+    user_email = get_git_config_user_email()
+    if allowed_to_push is None:
+        msg = f"Can't push '{local_branch}' to origin: in .upbase.yaml, field `branch->push_to_remote->allowed_to_push` must be set to the allowed user email"
+        print(Fore.YELLOW + msg + Style.RESET_ALL)
+        logging.warn(msg)
+        return False
+    elif allowed_to_push != user_email:
+        msg = f"Can't push '{local_branch}' to origin: you are user '{user_email}' and only user '{allowed_to_push}' is allowed to push"
+        print(Fore.YELLOW + msg + Style.RESET_ALL)
+        logging.warn(msg)
+        return False
+    return True
+
 def run_post_script(script):
     for command in script:
         try:
@@ -122,16 +141,17 @@ def rebase_local_branches(branch_mapping, remote_repo="origin"):
             print(Fore.GREEN + msg + Style.RESET_ALL)
             logging.info(msg)
 
-            git_fetch()
-            remote_local_branch = '/'.join([remote_repo, local_branch])
-            if not git_rebase(remote_local_branch):
-                msg = f"Conflicts occurred during rebase of local branch '{local_branch}' before pushing it to remote. Aborting rebase..."
-                print(Fore.YELLOW + msg + Style.RESET_ALL)
-                logging.warn(msg)
+            if is_allowed_to_push(local_branch, push_to_remote):
+                git_fetch()
+                remote_local_branch = '/'.join([remote_repo, local_branch])
+                if not git_rebase(remote_local_branch):
+                    msg = f"Conflicts occurred during rebase of local branch '{local_branch}' before pushing it to remote. Aborting rebase..."
+                    print(Fore.YELLOW + msg + Style.RESET_ALL)
+                    logging.warn(msg)
 
-                if not git_rebase_abort():
-                    raise Exception(f"Failed aborting rebase of '{local_branch}'")
-                continue
+                    if not git_rebase_abort():
+                        raise Exception(f"Failed aborting rebase of '{local_branch}'")
+                    continue
 
             git_push(local_branch, force=push_to_remote.get("force", False))
         
