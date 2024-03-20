@@ -4,6 +4,28 @@ import time
 import logging
 from colorama import Fore, Style
 
+LOG_TO_STDOUT = False
+
+def log_info(msg):
+    if LOG_TO_STDOUT:
+        print(Fore.GREEN + msg + Style.RESET_ALL)
+    logging.info(msg)
+
+def log_warning(msg):
+    if LOG_TO_STDOUT:
+        print(Fore.YELLOW + msg + Style.RESET_ALL)
+    logging.warning(msg)
+
+def log_error(msg):
+    if LOG_TO_STDOUT:
+        print(Fore.RED + msg + Style.RESET_ALL)
+    logging.error(msg)
+
+def log_exception(e):
+    if LOG_TO_STDOUT:
+        print(e)
+    logging.exception('Exception!', exc_info=e)
+
 def get_current_branch_name():
     result = subprocess.run(["git", "rev-parse", "--abbrev-ref", "HEAD"], capture_output=True, text=True)
     return result.stdout.strip()
@@ -21,10 +43,7 @@ def git_stash():
     try:
         subprocess.run(["git", "stash", "push", "-m" , f'"{stash_name}"'], check=True)
     except subprocess.CalledProcessError:
-        msg = "Error occurred while stashing changes."
-        print(Fore.RED + msg + Style.RESET_ALL)
-        logging.error(msg)
-
+        log_error("Error occurred while stashing changes.")
         return None
     return stash_name
 
@@ -40,10 +59,7 @@ def git_checkout(branch_name):
     try:
         subprocess.run(["git", "checkout", branch_name], check=True)
     except subprocess.CalledProcessError:
-        msg = f"Branch '{branch_name}' does not exist."
-        print(Fore.RED + msg + Style.RESET_ALL)
-        logging.error(msg)
-
+        log_error(f"Branch '{branch_name}' does not exist.")
         return False
     return True
 
@@ -51,10 +67,7 @@ def git_rebase(branch_name):
     try:
         subprocess.run(["git", "rebase", branch_name], check=True)
     except subprocess.CalledProcessError:
-        msg = f"Error occurred while rebasing '{get_current_branch_name()}' on top of '{branch_name}'."
-        print(Fore.RED + msg + Style.RESET_ALL)
-        logging.error(msg)
-
+        log_error(f"Error occurred while rebasing '{get_current_branch_name()}' on top of '{branch_name}'.")
         return False
     return True
 
@@ -62,10 +75,7 @@ def git_rebase_abort(branch_name):
     try:
         subprocess.run(["git", "rebase", "--abort"], check=True)
     except subprocess.CalledProcessError:
-        msg = f"Error occurred while aborting rebase of '{get_current_branch_name()}' on top of '{branch_name}'."
-        print(Fore.RED + msg + Style.RESET_ALL)
-        logging.error(msg)
-
+        log_error(f"Error occurred while aborting rebase of '{get_current_branch_name()}' on top of '{branch_name}'.")
         return False
     return True
 
@@ -73,10 +83,7 @@ def git_push(branch_name, force=False):
     try:
         subprocess.run(["git", "push", "origin", branch_name, "--force" if force else ""], check=True)
     except subprocess.CalledProcessError:
-        msg = f"Error occurred while pushing '{branch_name}' to origin."
-        print(Fore.RED + msg + Style.RESET_ALL)
-        logging.error(msg)
-
+        log_error(f"Error occurred while pushing '{branch_name}' to origin.")
         return False
     return True
 
@@ -84,14 +91,10 @@ def is_allowed_to_push(local_branch, push_to_remote):
     allowed_to_push = push_to_remote.get("allowed_to_push")
     user_email = get_git_config_user_email()
     if allowed_to_push is None:
-        msg = f"Can't push '{local_branch}' to origin: in .upbase.yaml, field `branch->push_to_remote->allowed_to_push` must be set to the allowed user email"
-        print(Fore.YELLOW + msg + Style.RESET_ALL)
-        logging.warning(msg)
+        log_warning(f"Can't push '{local_branch}' to origin: in .upbase.yaml, field `branch->push_to_remote->allowed_to_push` must be set to the allowed user email")
         return False
     elif allowed_to_push != user_email:
-        msg = f"Can't push '{local_branch}' to origin: you are user '{user_email}' and only user '{allowed_to_push}' is allowed to push"
-        print(Fore.YELLOW + msg + Style.RESET_ALL)
-        logging.warning(msg)
+        log_warning(f"Can't push '{local_branch}' to origin: you are user '{user_email}' and only user '{allowed_to_push}' is allowed to push")
         return False
     return True
 
@@ -100,10 +103,7 @@ def run_post_script(script):
         try:
             subprocess.run([command], check=True, shell=True)
         except subprocess.CalledProcessError:
-            msg = f"Error occurred while executing command '{command}' in post-script."
-            print(Fore.RED + msg + Style.RESET_ALL)
-            logging.error(msg)
-
+            log_error(f"Error occurred while executing command '{command}' in post-script.")
             return False
     return True
 
@@ -120,34 +120,26 @@ def rebase_local_branches(branch_mapping, remote_repo="origin"):
         push_to_remote = branch_info.get("push_to_remote")
         post_script = branch_info.get("post_script")
 
-        msg = f"Rebasing local branch '{local_branch}' on top of remote branch '{remote_branch}'..."
-        print(Fore.GREEN + msg + Style.RESET_ALL)
-        logging.info(msg)
+        log_info(f"Rebasing local branch '{local_branch}' on top of remote branch '{remote_branch}'...")
 
         if not git_checkout(local_branch):
             continue
 
         if not git_rebase(remote_branch):
-            msg = f"Conflicts occurred during rebase of local branch '{local_branch}'. Aborting rebase..."
-            print(Fore.YELLOW + msg + Style.RESET_ALL)
-            logging.warning(msg)
+            log_warning(f"Conflicts occurred during rebase of local branch '{local_branch}'. Aborting rebase...")
 
             if not git_rebase_abort():
                 raise Exception(f"Failed aborting rebase of '{local_branch}'")
             continue
 
         if push_to_remote is not None:
-            msg = f"Pushing '{local_branch}' to origin..."
-            print(Fore.GREEN + msg + Style.RESET_ALL)
-            logging.info(msg)
+            log_info(f"Pushing '{local_branch}' to origin...")
 
             if is_allowed_to_push(local_branch, push_to_remote):
                 git_fetch()
                 remote_local_branch = '/'.join([remote_repo, local_branch])
                 if not git_rebase(remote_local_branch):
-                    msg = f"Conflicts occurred during rebase of local branch '{local_branch}' before pushing it to remote. Aborting rebase..."
-                    print(Fore.YELLOW + msg + Style.RESET_ALL)
-                    logging.warning(msg)
+                    log_warning(f"Conflicts occurred during rebase of local branch '{local_branch}' before pushing it to remote. Aborting rebase...")
 
                     if not git_rebase_abort():
                         raise Exception(f"Failed aborting rebase of '{local_branch}'")
@@ -156,25 +148,19 @@ def rebase_local_branches(branch_mapping, remote_repo="origin"):
                 git_push(local_branch, force=push_to_remote.get("force", False))
         
         if post_script is not None and len(post_script) > 0:
-            msg = f"Running post-script for '{local_branch}'..."
-            print(Fore.GREEN + msg + Style.RESET_ALL)
-            logging.info(msg)
+            log_info(f"Running post-script for '{local_branch}'...")
 
             if not run_post_script(post_script):
-                msg = f"Failed to execute post-script for '{local_branch}', post-script: {post_script}"
-                print(Fore.RED + msg + Style.RESET_ALL)
-                logging.error(msg)
+                log_error(f"Failed to execute post-script for '{local_branch}', post-script: {post_script}")
         
-        msg = f"Successfully rebased local branch '{local_branch}' on top of remote branch '{remote_branch}'"
-        print(Fore.GREEN + msg + Style.RESET_ALL)
-        logging.info(msg)
+        log_info(f"Successfully rebased local branch '{local_branch}' on top of remote branch '{remote_branch}'")
 
 
 
 if __name__ == "__main__":
     logging.basicConfig(format='%(levelname)s %(asctime)s: %(message)s',
                         datefmt='%m/%d/%Y %I:%M:%S %p',
-                        level=logging.DEBUG,
+                        level=logging.INFO,
                         filename='.upbase/upbase.log',
                         encoding='utf-8')
 
@@ -193,11 +179,8 @@ if __name__ == "__main__":
             rebase_local_branches(branch_mapping.get("branches", []), remote_repo=remote_repo)
 
         except Exception as e:
-            msg = f"******** Stashed your changes in original branch '{original_branch}' under name '{stash_name}' ********"
-            print(e)
-            logging.exception('Exception!', exc_info=e)
-            print(Fore.YELLOW + msg + Style.RESET_ALL)
-            logging.warning(msg)
+            log_exception(e)
+            log_warning(f"******** Stashed your changes in original branch '{original_branch}' under name '{stash_name}' ********")
             exit(1)
 
         # Switch back to the original branch
