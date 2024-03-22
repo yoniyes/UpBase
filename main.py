@@ -1,10 +1,13 @@
 import subprocess
 import yaml
 import time
+import os
 import logging
 from colorama import Fore, Style
 
-LOG_TO_STDOUT = False
+LOG_TO_STDOUT = True
+# To run UpBase using cron, set this environment variable in the command like: `REPO_PATH="/path/to/local/repo" python3 /path/to/upbase`
+REPO_PATH = "REPO_PATH"
 
 def log_info(msg):
     if LOG_TO_STDOUT:
@@ -158,13 +161,26 @@ def rebase_local_branches(branch_mapping, remote_repo="origin"):
 
 
 if __name__ == "__main__":
+    original_wd = os.getcwd()
+    local_repo_path = "."
+    try:
+        local_repo_path = os.path.abspath(os.environ[REPO_PATH])
+    except Exception:
+        pass
+    
+    yaml_path = os.path.join(local_repo_path, ".upbase", ".upbase.yaml")
+
     logging.basicConfig(format='%(levelname)s %(asctime)s: %(message)s',
                         datefmt='%m/%d/%Y %I:%M:%S %p',
                         level=logging.INFO,
                         filename='.upbase/upbase.log',
                         encoding='utf-8')
 
-    with open(".upbase/.upbase.yaml", "r") as yaml_file:
+    with open(yaml_path, "r") as yaml_file:
+        # Move to the local repo
+        os.chdir(local_repo_path)        
+        log_info(f"Changed working directory to '{local_repo_path}'")
+
         # Save the current branch name
         original_branch = get_current_branch_name()
 
@@ -188,3 +204,6 @@ if __name__ == "__main__":
 
         # Pop the stash
         git_stash_pop(stash_name)
+
+        # Go back to original working directory
+        os.chdir(original_wd)
