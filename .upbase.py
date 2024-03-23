@@ -170,15 +170,16 @@ if __name__ == "__main__":
     
     yaml_path = os.path.join(local_repo_path, ".upbase", ".upbase.yaml")
 
-    logging.basicConfig(format='%(levelname)s %(asctime)s: %(message)s',
-                        datefmt='%m/%d/%Y %I:%M:%S %p',
-                        level=logging.INFO,
-                        filename='.upbase/upbase.log',
-                        encoding='utf-8')
-
     with open(yaml_path, "r") as yaml_file:
         # Move to the local repo
-        os.chdir(local_repo_path)        
+        os.chdir(local_repo_path)
+        
+        logging.basicConfig(format='%(levelname)s %(asctime)s: %(message)s',
+                    datefmt='%m/%d/%Y %I:%M:%S %p',
+                    level=logging.INFO,
+                    filename='.upbase/upbase.log',
+                    encoding='utf-8')
+
         log_info(f"Changed working directory to '{local_repo_path}'")
 
         # Save the current branch name
