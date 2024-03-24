@@ -1,6 +1,6 @@
 # UpBase
 
-Automatically rebase your local brnaches and keep them up-to-date with changes commited to parent branches.
+Automatically rebase your local branches and keep them up-to-date with changes committed to remote branches.
 
 ## Setup
 
